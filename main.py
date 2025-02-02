@@ -102,6 +102,7 @@ def train(epoch):
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, targets)
+        net.module.pooler.update_matrices()
         loss.backward()
         optimizer.step()
 
