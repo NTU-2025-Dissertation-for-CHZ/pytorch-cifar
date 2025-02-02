@@ -1,0 +1,3 @@
+[submodule "Compressive-Sensing-Downsampler"]
+	path = Compressive-Sensing-Downsampler
+	url = https://github.com/NTU-2025-Dissertation-for-CHZ/Compressive-Sensing-Downsampler.git
