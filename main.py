@@ -97,24 +97,28 @@ def train(epoch):
     train_loss = 0
     correct = 0
     total = 0
+    train_delta = 0
+    train_hoyer = 0
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, targets)
-        net.module.pooler.update_matrices()
+        hoyer , delta  = net.module.pooler.update_matrices()
         loss.backward()
         optimizer.step()
 
         train_loss += loss.item()
+        train_delta += delta.item()
+        train_hoyer += hoyer.item()
         _, predicted = outputs.max(1)
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
         if batch_idx % 100 == 0:
-            print('Epoch: %d | Batch: %d/%d | Loss: %.3f | Acc: %.3f%% (%d/%d)'
+            print('Epoch: %d | Batch: %d/%d | Loss: %.3f | Acc: %.3f%% (%d/%d) | Hoyer: %.3f | Delta: %.3f '
                   % (epoch, batch_idx, len(trainloader),
-                     train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+                     train_loss/(batch_idx+1), 100.*correct/total, correct, total,train_hoyer / (batch_idx+1) ,train_delta / (batch_idx+1) ))
 
 
 def test(epoch):

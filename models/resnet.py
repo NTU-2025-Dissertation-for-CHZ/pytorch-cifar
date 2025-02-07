@@ -11,6 +11,56 @@ import torch.nn as nn
 import torch.nn.functional as F
 from .CompressiveSensingDownsampler.CompressiveDownsampler import CompressiveDownsampler
 
+class AttentionClassifier(nn.Module):
+    def __init__(self, input_dim=512*3, num_classes=1000, num_heads=8):
+        super().__init__()
+        
+        self.input_dim = input_dim
+        self.hidden_dim = 512
+        
+        # 特征映射层
+        # self.input_proj = nn.Sequential(
+        #     nn.Linear(input_dim, self.hidden_dim),
+        #     nn.LayerNorm(self.hidden_dim),
+        #     nn.GELU()
+        # )
+        
+        # 多头自注意力
+        self.attention = nn.MultiheadAttention(
+            embed_dim=self.input_dim,
+            num_heads=num_heads,
+            dropout=0.1,
+            batch_first=True
+        )
+        
+        # 分类头
+        self.classifier = nn.Sequential(
+            nn.Linear(self.input_dim, self.input_dim),
+            nn.LayerNorm(self.input_dim),
+            nn.GELU(),
+            nn.Dropout(0.5),
+            nn.Linear(self.input_dim, num_classes)
+        )
+        
+    def forward(self, x):
+        # 添加调试打印
+        
+        # 输入特征映射
+        #x = self.input_proj(x)  # [B, 512]
+        
+        # 准备注意力输入
+        #x = x.unsqueeze(1)  # [B, 1, 512]
+        
+        # 自注意力处理
+        attn_out, _ = self.attention(x, x, x)
+        attn_out = attn_out.squeeze(1)  # [B, 512]
+        
+        # 分类
+        output = self.classifier(attn_out)
+        
+        return output  # 确保返回output
+    
+    
 class BasicBlock(nn.Module):
     expansion = 1
 
@@ -82,8 +132,12 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
-        self.pooler = CompressiveDownsampler(512, 512*2, 4)
-        self.linear = nn.Linear(512*block.expansion*2, num_classes)
+        self.pooler = CompressiveDownsampler(512, 4, 4)
+        #self.decoder = AttentionClassifier(input_dim=512*6, num_classes=10, num_heads=8)
+        self.linear = nn.Sequential(
+            # 输出层
+            nn.Linear(512, num_classes)
+        )
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
